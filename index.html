@@ -1,101 +1,125 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gerador de Pôster</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            background-color: #f4f4f9;
-            padding: 20px;
-        }
-        .container {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            text-align: center;
-            max-width: 500px;
-            width: 100%;
-        }
-        input[type="file"] {
-            margin: 20px 0;
-        }
-        canvas {
-            max-width: 100%;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            margin-bottom: 20px;
-            display: none;
-        }
-        .btn {
-            background-color: #007BFF;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-            margin: 10px 5px;
-        }
-        .btn:hover {
-            background-color: #0056b3;
-        }
-        #downloadBtn {
-            display: none;
-            background-color: #28a745; /* Cor verde para diferenciar o download */
-        }
-        #downloadBtn:hover {
-            background-color: #218838;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=768, initial-scale=1.0">
+  <title>Gerador de Pôster</title>
+  <style>
+      body {
+          font-family: Arial, sans-serif;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          background-color: #f4f4f9;
+          padding: 20px;
+      }
+      .container {
+          background: white;
+          padding: 20px;
+          border-radius: 10px;
+          box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+          text-align: center;
+          max-width: 500px;
+          width: 100%;
+      }
+      input[type="file"] {
+          margin: 20px 0;
+      }
+      canvas {
+          max-width: 100%;
+          border: 1px solid #ccc;
+          border-radius: 5px;
+          margin-bottom: 20px;
+          display: none;
+      }
+      button {
+          background-color: #007BFF;
+          color: white;
+          border: none;
+          padding: 10px 20px;
+          border-radius: 5px;
+          cursor: pointer;
+          font-size: 16px;
+          margin: 0 5px;
+          display: none;
+      }
+      button:active {
+          background-color: #0056b3;
+      }
+  </style>
 </head>
 <body>
+  <div class="container">
+      <h2>Crie seu Pôster</h2>
+      <p>Envie sua foto, ela aparecerá sobre as duas pessoas do pôster.</p>
+      <input type="file" id="upload" accept="image/*">
+      <canvas id="posterCanvas" width="768" height="1087"></canvas>
+      <br>
+      <button id="downloadBtn">Baixar Pôster</button>
+  </div>
+  <script>
+  const uploadInput = document.getElementById('upload');
+  const canvas = document.getElementById('posterCanvas');
+  const ctx = canvas.getContext('2d');
+  const downloadBtn = document.getElementById('downloadBtn');
 
-    <div class="container">
-        <h2>Crie seu Pôster</h2>
-        <p>Envie sua foto e clique em gerar para criar sua arte.</p>
+  // LINK DA ARTE BASE (use RAW do GitHub ou outro local seu!)
+  const templateImageUrl = "https://raw.githubusercontent.com/heloisahousecomvc-hash/kj/main/arte-poster.png";
+  // Troque acima para o seu PNG com o mesmo tamanho da imagem informada (768x1087)
 
-        <input type="file" id="upload" accept="image/*">
-        <br>
-        <button id="generateBtn" class="btn">Gerar Pôster</button>
+  // ÁREA ONDE A FOTO ENTRA (ajuste conforme desejar)
+  const fotoX = 176;      // posição X (left)
+  const fotoY = 833;      // posição Y (top)
+  const fotoLargura = 417; // largura da área da foto
+  const fotoAltura = 195;  // altura da área da foto
 
-        <canvas id="posterCanvas" width="1080" height="1527"></canvas>
+  let templateImageLoaded = false;
+  let templateImage = new Image();
+  templateImage.crossOrigin = "anonymous";
+  templateImage.onload = function() {
+      templateImageLoaded = true;
+  };
+  templateImage.src = templateImageUrl;
 
-        <button id="downloadBtn" class="btn">Baixar Pôster</button>
-    </div>
+  uploadInput.addEventListener('change', function(event) {
+      const file = event.target.files[0];
+      if (!file) return;
 
-    <script>
-        const uploadInput = document.getElementById('upload');
-        const generateBtn = document.getElementById('generateBtn');
-        const canvas = document.getElementById('posterCanvas');
-        const ctx = canvas.getContext('2d');
-        const downloadBtn = document.getElementById('downloadBtn');
+      if (!templateImageLoaded) {
+          templateImage.src = templateImageUrl;
+      }
 
-        const overlayImageUrl = 'https://innerplay-media03-sa-production.s3.amazonaws.com/o/ff0becce-0658-4dd6-99f6-6dbe87adb109/d/77b9ef4b-6f58-4e51-aecb-b686578ad770/geminifalai2_edit_output.png?response-content-type=image%2Fpng&AWSAccessKeyId=AKIAQT3364IC6V6QDPWG&Signature=1s3WGL6PeiCLeylm1SmgbMZmFMI%3D&Expires=1780101522'; 
+      const reader = new FileReader();
+      reader.onload = function(e) {
+          const userImage = new Image();
+          userImage.onload = function() {
+              if (!templateImageLoaded) {
+                  templateImage.onload = () => drawPoster(userImage);
+                  if (!templateImage.src) templateImage.src = templateImageUrl;
+              } else {
+                  drawPoster(userImage);
+              }
+          };
+          userImage.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+  });
 
-        const fotoX = 150;      
-        const fotoY = 1100;     
-        const fotoLargura = 780; 
-        const fotoAltura = 400;  
+  function drawPoster(userImage) {
+      // Fundo branco (opcional)
+      ctx.fillStyle = "#FFFFFF";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      // Template base primeiro
+      ctx.drawImage(templateImage, 0, 0, canvas.width, canvas.height);
 
-        // Agora a ação acontece ao clicar no botão "Gerar"
-        generateBtn.addEventListener('click', function() {
-            const file = uploadInput.files[0];
+      // INSERE FOTO NA ÁREA MARCADA
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(fotoX, fotoY, fotoLargura, fotoAltura);
+      ctx.clip();
 
-            if (!file) {
-                alert("Por favor, selecione uma foto primeiro!");
-                return;
-            }
-
-            generateBtn.innerText = "Gerando..."; // Muda o texto enquanto carrega
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const userImage = new Image();
-                userImage.onload = function() {
-
+      // Preenche totalmente a área, mantendo proporção
+      const scale = Math.max(fotoLargura / userImage.width, fotoAltura / userImage.height);
+      const drawWidth = userImage.width * scale;
+      const*
+
